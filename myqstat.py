@@ -2,17 +2,34 @@
 import os
 import xml.etree.ElementTree as ET
 import subprocess
+from math import floor, fmod
 
 def printSingleJobsDetails(id):
     p = subprocess.Popen(['qstat', '-f', '-x', id], stdout=subprocess.PIPE)
     output = p.communicate()[0].splitlines()
-    root = ET.fromstring(output[0])
+    job = ET.fromstring(output[0])[0]
 
-    for job in root:
-        print id + " ",
-        print job.find('job_state').text, " ",
-        print job.find('Resource_List').find('nodes').text, " ",
-        print job.find('Job_Name').text
+    if job.find('Walltime')!=None:
+        s = int(job.find('Walltime').find('Remaining').text)
+        secs = s%60
+        mins = floor(s/60)
+        if mins>60:
+            hrs = int(floor(mins/60))
+            mins = fmod(mins,60)
+        else:
+            hrs = 0
+        used_time = "%02d:%02d:%02d" % (hrs, mins, secs)
+
+    else:
+        used_time = '--:--:--'
+
+    print id, " ",
+    print job.find('job_state').text, " ",
+    print job.find('Resource_List').find('nodes').text,
+    print job.find('Resource_List').find('vmem').text,
+    print job.find('Resource_List').find('walltime').text, " ",
+    print used_time, " ",
+    print job.find('Job_Name').text
 
 
 def myqstat(t):
